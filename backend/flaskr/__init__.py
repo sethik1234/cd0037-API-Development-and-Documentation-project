@@ -12,21 +12,48 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
+    CORS(app)
 
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
-
+    
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
+    # CORS Headers
+    @app.after_request
+    def after_request(response):
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
 
+    def paginate_questions(page, selection):
+        
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+        questions = [question.format() for question in selection]
+        current_questions = questions[start:end]
+        return current_questions
     """
     @TODO:
     Create an endpoint to handle GET requests
     for all available categories.
     """
-
+    @app.route("/categories",methods=['GET'])
+    def get_categories():
+        categories=Category.query.all()
+        if categories is None:
+            abort(404)
+        else:
+            return (jsonify({
+                'success':True,
+                'categories': {category.id: category.type for category in categories}
+            }))
 
     """
     @TODO:
@@ -34,12 +61,36 @@ def create_app(test_config=None):
     including pagination (every 10 questions).
     This endpoint should return a list of questions,
     number of total questions, current category, categories.
+    
 
     TEST: At this point, when you start the application
     you should see questions and categories generated,
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
+    @app.route("/questions",methods=['GET'])
+    def get_questions():
+        page = request.args.get("page", 1, type=int)
+        all_questions=Question.query.all()
+        
+        if all_questions is None:
+            abort(404)
+        else:
+            paginated_questions=paginate_questions(page,all_questions)
+        categories=Category.query.all()
+
+        if categories is None:
+            abort(404)
+
+        return jsonify(
+            {
+                'success':True,
+                'questions':paginated_questions,
+                'total_questions':len(all_questions),
+                'categories': {category.id: category.type for category in categories},
+                'current_category': None
+            }
+        )
 
     """
     @TODO:
@@ -59,6 +110,33 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
+    @app.route("/questions",methods=['POST'])
+    def save_question():
+        request_body = request.get_json()
+        question=request_body.get("question",None)
+        answer=request_body.get("answer",None)
+        difficulty=request_body.get("difficulty",None)
+        category=request_body.get("category",None)
+
+        try:
+            question = Question(question=question, answer=answer,difficulty= difficulty,category=category )
+            question.insert()
+
+            all_questions = Question.query.order_by(Question.id).all()
+            page = request.args.get("page", 1, type=int)
+            current_questions = paginate_questions(page, all_questions)
+
+            return jsonify(
+                {
+                    "success": True,
+                    "created": question.id,
+                    "questions": current_questions,
+                    "total_questions": len(all_questions),
+                }
+            )
+
+        except:
+            abort(422)
 
     """
     @TODO:
