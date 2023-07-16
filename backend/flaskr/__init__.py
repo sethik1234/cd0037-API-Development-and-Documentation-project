@@ -11,13 +11,12 @@ QUESTIONS_PER_PAGE = 10
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    setup_db(app)
-    CORS(app)
+    setup_db(app) 
 
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
-    
+    CORS(app)
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
@@ -157,6 +156,26 @@ def create_app(test_config=None):
     categories in the left column will cause only questions of that
     category to be shown.
     """
+    @app.route("/categories/<int:category_id>/questions")
+    def get_questions_by_category(category_id:int):
+        questions_for_category=Question.query.filter_by(category=category_id)
+        if questions_for_category is None:
+            abort(404)
+        else:
+            try:
+                category=Category.query.get(category_id)
+                if category is None:
+                    abort(404)
+                else:
+                    return jsonify(
+                        {
+                            "questions":[question.format() for question in questions_for_category],
+                            "totalQuestions": questions_for_category.count(),
+                            "currentCategory": category.type
+                        }
+                    )
+            except:
+                abort(422)
 
     """
     @TODO:
