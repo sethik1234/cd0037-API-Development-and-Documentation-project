@@ -141,12 +141,25 @@ def create_app(test_config=None):
     @TODO:
     Create a POST endpoint to get questions based on a search term.
     It should return any questions for whom the search term
-    is a substring of the question.
+    is a substring of the question.   
 
     TEST: Search by any phrase. The questions list will update to include
     only question that include that string within their question.
     Try using the word "title" to start.
     """
+    @app.route("/questions/search",methods=['POST'])
+    def search_question():
+        request_body=request.get_json();
+        searchTerm=request_body.get('searchTerm')
+        searchResults=Question.query.filter(Question.question.ilike('%'+ searchTerm +'%'))
+
+        return jsonify(
+            {
+                "questions":[question.format() for question in searchResults],
+                "totalQuestions": len(Question.query.all()),
+                "currentCategory": ""
+            }
+        )
 
     """
     @TODO:
@@ -188,6 +201,12 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
+    @app.route("/quizzes",methods=['POST'])
+    def get_questions_for_quiz():
+        request_body = request.get_json()
+        quiz_category=request_body.get("quiz_category",None)
+        previous_questions=request_body.get("previous_questions",None)
+
 
     """
     @TODO:
