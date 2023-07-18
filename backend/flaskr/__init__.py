@@ -220,8 +220,33 @@ def create_app(test_config=None):
     def get_questions_for_quiz():
         request_body = request.get_json()
         quiz_category=request_body.get("quiz_category",None)
+        category_id=quiz_category.get("id","None")
         previous_questions=request_body.get("previous_questions",None)
-
+        if category_id is None:
+            abort(404)
+        else:
+            try:
+                if category_id!=0:
+                    questions=Question.query.filter(Question.category==int(category_id)).filter(~Question.id.in_(previous_questions)).all()
+                else:
+                    questions=Question.query.filter(~Question.id.in_(previous_questions)).all()   
+                
+                if len(questions)!=0:
+                    list_of_question_ids=[q.id for q in questions]
+                    random_question_id=random.choice(list_of_question_ids)
+                    return jsonify(
+                        {
+                            "question":[q.format() for q in questions if q.id==random_question_id][0]
+                        }
+                    )
+                else:
+                    return jsonify(
+                        {
+                            "question":""
+                        }                
+                    )
+            except:
+                abort(422)
 
     """
     @TODO:
