@@ -8,10 +8,14 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
-def create_app(test_config=None):
+def create_app(test_config=None, setup_db_flag=True):
     # create and configure the app
     app = Flask(__name__)
-    setup_db(app) 
+    # added this setup_db_flag because test class was also setting up the db 
+    # and was throwing exception A 'SQLAlchemy' instance has already been registered on this Flask app. 
+    # Import and use that instance instead.
+    if setup_db_flag==True:
+        setup_db(app) 
 
     """
     Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
@@ -77,6 +81,8 @@ def create_app(test_config=None):
             abort(404)
         else:
             paginated_questions=paginate_questions(page,all_questions)
+            if len(paginated_questions) == 0:
+                abort(404)
         
         categories=Category.query.all()
 
@@ -89,7 +95,8 @@ def create_app(test_config=None):
                 'questions':paginated_questions,
                 'total_questions':len(all_questions),
                 'categories': {category.id: category.type for category in categories},
-                'current_category': ""
+                'current_category': "",
+                'total_categories':len(categories)
             }
         )
 
@@ -152,8 +159,7 @@ def create_app(test_config=None):
         except:
             abort(422)
 
-    """
-    @TODO:
+    """    
     Create a POST endpoint to get questions based on a search term.
     It should return any questions for whom the search term
     is a substring of the question.   
@@ -171,6 +177,7 @@ def create_app(test_config=None):
 
             return jsonify(
                 {
+                    "success":True,
                     "questions":[question.format() for question in searchResults],
                     "totalQuestions": len(Question.query.all()),
                     "currentCategory": ""
@@ -199,6 +206,7 @@ def create_app(test_config=None):
                 else:
                     return jsonify(
                         {
+                            "success":True,
                             "questions":[question.format() for question in questions_for_category],
                             "totalQuestions": questions_for_category.count(),
                             "currentCategory": category.type
@@ -237,12 +245,14 @@ def create_app(test_config=None):
                     random_question_id=random.choice(list_of_question_ids)
                     return jsonify(
                         {
+                            "success":True,
                             "question":[q.format() for q in questions if q.id==random_question_id][0]
                         }
                     )
                 else:
                     return jsonify(
                         {
+                            "success":True,
                             "question":""
                         }                
                     )
