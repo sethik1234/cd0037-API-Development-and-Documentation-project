@@ -11,5 +11,6 @@ packaging==23.1
 psycopg2==2.9.6
 pyscopg2==66.0.2
 typing_extensions==4.6.3
-vboxapi==1.0
+# vboxapi==1.0
 WTForms==3.0.1
+Flask-Cors==4.0.0
