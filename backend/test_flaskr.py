@@ -12,14 +12,17 @@ class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
 
     def setUp(self):
+        db_host = os.environ.get('DB_HOST')
+        db_port = os.environ.get('DB_PORT')
+        db_username = os.environ.get('DB_USERNAME')
+        db_password = os.environ.get('DB_PASSWORD')
+        db_name = os.environ.get('DB_TESTDATABASENAME')        
+        database_path = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
         """Define test variables and initialize app."""
         self.app = create_app(setup_db_flag=False)
-        self.client = self.app.test_client
-        self.database_name = "trivia_test"
-        self.database_path = "postgresql://{}:{}@{}/{}".format("postgres", "admin", "localhost:5432", self.database_name)
-        setup_db(self.app, self.database_path)
-
-        
+        self.client = self.app.test_client        
+        self.database_path = database_path
+        setup_db(self.app, self.database_path)        
     
     def tearDown(self):
         """Executed after reach test"""
@@ -58,6 +61,12 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["total_questions"],len(Question.query.all()))
     
     def test_get_paginated_questions(self):
+        # Insert 10 questions to ensure we have expected number of questions in response per page
+        for counter in range(10):
+            question=Question(question="Question " + str(counter), answer="Answer " + str(counter),category="1",difficulty="1")
+            request=question.format()            
+            res=self.client().post("/questions",json=request)
+            
         res = self.client().get("/questions?page=1")
         data=json.loads(res.data)
         self.assertEqual(res.status_code,200)
